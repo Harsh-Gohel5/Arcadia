@@ -13,8 +13,8 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable()) 
             .authorizeHttpRequests(auth -> auth
-                // 🟢 Allow Health Check, Login, AND WebSockets
-                .requestMatchers("/api/health", "/api/users/login", "/ws/**").permitAll() 
+                // 🟢 Allow Health Check, Login, Messages API, AND WebSockets
+                .requestMatchers("/api/health", "/api/users/login", "/api/messages", "/ws/**").permitAll()
                 .anyRequest().authenticated()
             );
         return http.build();
