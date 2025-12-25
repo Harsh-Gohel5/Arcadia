@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 🟢 PASTE THIS AT THE BOTTOM TO HIDE THE 'N' BADGE */
+nextjs-portal,
+#nextjs-dev-tools-overlay,
+[data-nextjs-toast],
+[data-nextjs-dialog],
+div[class*="nextjs-toast"],
+div[class*="nextjs-dev-overlay"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

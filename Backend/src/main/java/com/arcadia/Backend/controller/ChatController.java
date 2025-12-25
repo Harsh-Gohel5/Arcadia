@@ -19,52 +19,53 @@ public class ChatController {
 
     private final MessageRepository messageRepository;
 
-    // 1. Dependency Injection: We ask Spring to give us the Repository tool
     public ChatController(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }
 
-    // 2. WebSocket: Handle sending messages
-    // 2. WebSocket: Handle sending messages
+    // 🟢 1. Handle Typing Indicators
+    // Listens for /app/chat.typing -> Broadcasts to /topic/public
+    // logic: We do NOT save "typing..." status to the database.
+    @MessageMapping("/chat.typing")
+    @SendTo("/topic/public")
+    public ChatMessage typing(@Payload ChatMessage chatMessage) {
+        return chatMessage;
+    }
+
+    // 🟢 2. Handle Normal Chat Messages
+    // Listens for /app/chat.sendMessage -> Broadcasts to /topic/public
+    // logic: We SAVE these to the database so history works.
     @MessageMapping("/chat.sendMessage")
     @SendTo("/topic/public")
     public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
-        
-        // 🔍 DEBUG LOGS: Print what we received
-        System.out.println("---------- MESSAGE RECEIVED ----------");
-        System.out.println("Content: " + chatMessage.getContent());
-        System.out.println("Sender: " + chatMessage.getSender());
-        System.out.println("Type: " + chatMessage.getType());
-
-        // SAVE to Database
+        // Only save actual CHAT messages (ignore JOIN/TYPING)
         if (chatMessage.getType() == ChatMessage.MessageType.CHAT) {
-            System.out.println("✅ Saving to Database...");
-            try {
-                messageRepository.save(chatMessage);
-                System.out.println("✅ Save Success!");
-            } catch (Exception e) {
-                System.out.println("❌ Save FAILED: " + e.getMessage());
-                e.printStackTrace();
-            }
-        } else {
-            System.out.println("⚠️ Not saving because Type is: " + chatMessage.getType());
+            messageRepository.save(chatMessage);
         }
-        System.out.println("--------------------------------------");
-
         return chatMessage;
     }
-    // 3. WebSocket: Handle new user joining
+
+    // 🟢 3. Handle User Joining
     @MessageMapping("/chat.addUser")
     @SendTo("/topic/public")
     public ChatMessage addUser(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
+        // Add username in web socket session
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
         return chatMessage;
     }
 
-    // 4. REST API: Load Chat History (New Feature!)
+    // 🟢 4. REST API: Load Chat History
     @GetMapping("/api/messages")
-    @ResponseBody // Tells Spring to send the data as JSON, not a HTML page
+    @ResponseBody
     public List<ChatMessage> getChatHistory() {
         return messageRepository.findByType(ChatMessage.MessageType.CHAT);
+    }
+
+    // 🟢 5. Handle Presence Signals (I am here!)
+    // Used to sync the sidebar when a new user joins
+    @MessageMapping("/chat.presence")
+    @SendTo("/topic/public")
+    public ChatMessage presence(@Payload ChatMessage chatMessage) {
+        return chatMessage;
     }
 }
